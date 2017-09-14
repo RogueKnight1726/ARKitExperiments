@@ -65,9 +65,53 @@ class ViewController: UIViewController {
         virtualObjectManager.loadVirtualObject(object, to: float3(position), cameraTransform: cameraTransform)
         if object.parent == nil {
             serialQueue.async {
-                self.sceneView.scene.rootNode.addChildNode(object)
+//                object.constraints = [SCNBillboardConstraint()]
+//                self.sceneView.scene.rootNode.addChildNode(object)
+                
+                let spriteKitScene = SKScene(size: CGSize(width: self.sceneView.frame.width, height: self.sceneView.frame.height))
+                spriteKitScene.scaleMode = .aspectFit
+                
+                guard let fileURL = Bundle.main.url(forResource: "Triple_Tap_1", withExtension: "mp4") else {
+                    return
+                }
+                print(fileURL)
+                let videoPlayer = AVPlayer(url: fileURL)
+                videoPlayer.actionAtItemEnd = .none
+                
+                let videoSpriteKitNode = SKVideoNode(avPlayer: videoPlayer)
+                videoSpriteKitNode.position = CGPoint(x: spriteKitScene.size.width / 2.0, y: spriteKitScene.size.height / 2.0)
+                videoSpriteKitNode.size = spriteKitScene.size
+                videoSpriteKitNode.yScale = -1.0
+                videoSpriteKitNode.play()
+                spriteKitScene.backgroundColor = .clear
+                
+                spriteKitScene.addChild(videoSpriteKitNode)
+                
+                let background = SCNPlane(width: CGFloat(2), height: CGFloat(2))
+                background.firstMaterial?.diffuse.contents = spriteKitScene
+                let backgroundNode = SCNNode(geometry: background)
+                backgroundNode.position = position
+                
+                
+                        backgroundNode.constraints = [SCNBillboardConstraint()]
+                backgroundNode.rotation.z = 0
+                self.sceneView.scene.rootNode.addChildNode(backgroundNode)
+                
+                
+                // Create a transform with a translation of 0.2 meters in front of the camera.
+                var translation = matrix_identity_float4x4
+                translation.columns.3.z = -0.2
+                let transform = simd_mul((self.session.currentFrame?.camera.transform)!, translation)
+                
+                // Add a new anchor to the session.
+                let anchor = ARAnchor(transform: transform)
+                self.sceneView.session.add(anchor: anchor)
             }
         }
+    }
+    
+    func view(_ view: ARSKView, nodeFor anchor: ARAnchor) -> SKNode? {
+        return SKLabelNode(text: "Hello")
     }
     
     @IBAction func swapModel(_ sender: Any) {
